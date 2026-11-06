@@ -38,6 +38,7 @@ export default async function handler(req, res) {
       redirect_uri: "https://roblox-verification-one.vercel.app/api/oauth/callback",
       code,
       code_verifier: verifier
+      client_secret: process.env.ROBLOX_CLIENT_SECRET,
     });
 
     const tokenResponse = await fetch(
