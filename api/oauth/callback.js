@@ -35,7 +35,6 @@ export default async function handler(req, res) {
     const tokenParams = new URLSearchParams({
       grant_type: "authorization_code",
       client_id: process.env.ROBLOX_CLIENT_ID,
-      client_secret: process.env.ROBLOX_CLIENT_SECRET,
       redirect_uri: "https://roblox-verification-one.vercel.app/api/oauth/callback",
       code,
       code_verifier: verifier
