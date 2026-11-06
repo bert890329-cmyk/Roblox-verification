@@ -9,26 +9,35 @@ export default async function handler(req, res) {
 
   try {
     const clientId = process.env.ROBLOX_CLIENT_ID;
-    const secret = process.env.OAUTH_STATE_SECRET;
 
-    if (!clientId || !secret) {
-      return res.status(500).send("Missing environment variables");
+    if (!clientId) {
+      return res.status(500).send("Missing client ID");
     }
 
     const state = crypto.randomBytes(32).toString("hex");
+    const verifier = crypto.randomBytes(32).toString("base64url");
+
+    const challenge = crypto
+      .createHash("sha256")
+      .update(verifier)
+      .digest("base64url");
+
     const redis = await getRedis();
 
-    await redis.set(`oauth:${state}`, "pending", {
-      EX: 600,
-      NX: true
-    });
+    await redis.set(
+      `oauth:${state}`,
+      JSON.stringify({ verifier }),
+      { EX: 600, NX: true }
+    );
 
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: "https://roblox-verification-one.vercel.app/api/oauth/callback",
       response_type: "code",
       scope: "openid profile",
-      state
+      state,
+      code_challenge: challenge,
+      code_challenge_method: "S256"
     });
 
     return res.redirect(
@@ -36,7 +45,7 @@ export default async function handler(req, res) {
       params.toString()
     );
   } catch (error) {
-    console.error("OAuth login error:", error.message);
+    console.error("Login error:", error.message);
     return res.status(500).send("Could not start login");
   }
 }
