@@ -1,0 +1,35 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register Discord Command</title>
+</head>
+<body>
+  <h2>Register /verify</h2>
+  <input id="secret" type="password" placeholder="Enter setup secret">
+  <button onclick="register()">Register Command</button>
+  <p id="result"></p>
+
+  <script>
+    async function register() {
+      const secret = document.getElementById("secret").value;
+      const result = document.getElementById("result");
+
+      result.textContent = "Registering...";
+
+      try {
+        const response = await fetch("/api/discord/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret })
+        });
+
+        const data = await response.json();
+        result.textContent = data.message || data.error || "Unknown response";
+      } catch {
+        result.textContent = "Something went wrong.";
+      }
+    }
+  </script>
+</body>
+</html>
