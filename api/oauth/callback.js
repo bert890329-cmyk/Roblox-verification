@@ -91,7 +91,35 @@ export default async function handler(req, res) {
 
     await redis.set(`discord:${discordId}`, user.sub);
     await redis.set(`roblox:${user.sub}`, discordId);
+const dmResponse = await fetch(
+  "https://discord.com/api/v10/users/@me/channels",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ recipient_id: discordId })
+  }
+);
 
+if (dmResponse.ok) {
+  const channel = await dmResponse.json();
+
+  await fetch(
+    `https://discord.com/api/v10/channels/${channel.id}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        content: `✅ Your Roblox account **${user.preferred_username || user.sub}** has been successfully linked!`
+      })
+    }
+  );
+}
     return res.status(200).send(
       `Verification successful! Roblox account: ${user.preferred_username || user.sub}. You can close this page.`
     );
