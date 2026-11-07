@@ -19,14 +19,14 @@ export default async function handler(req, res) {
 
     const redis = await getRedis();
 
-    // Consume the state once so it cannot be reused.
-    const session = await redis.getDel(`oauth:${state}`);
+    // Retrieve and consume the temporary verification session.
+    const sessionData = await redis.getDel(`oauth:${state}`);
 
-    if (!session) {
+    if (!sessionData) {
       return res.status(400).send("Invalid or expired verification session.");
     }
 
-    const { verifier, discordId } = JSON.parse(session);
+    const { verifier, discordId } = JSON.parse(sessionData);
 
     if (!verifier || !discordId) {
       return res.status(400).send("Invalid verification session.");
@@ -35,10 +35,10 @@ export default async function handler(req, res) {
     const tokenParams = new URLSearchParams({
       grant_type: "authorization_code",
       client_id: process.env.ROBLOX_CLIENT_ID,
+      client_secret: process.env.ROBLOX_CLIENT_SECRET,
       redirect_uri: "https://roblox-verification-one.vercel.app/api/oauth/callback",
       code,
-      code_verifier: verifier,
-      client_secret: process.env.ROBLOX_CLIENT_SECRET,
+      code_verifier: verifier
     });
 
     const tokenResponse = await fetch(
@@ -77,52 +77,60 @@ export default async function handler(req, res) {
     if (!user.sub) {
       return res.status(400).send("Roblox did not return a user ID.");
     }
-const existingDiscord = await redis.get(`roblox:${user.sub}`);
 
-if (existingDiscord && existingDiscord !== discordId) {
-  return res.status(409).send("This Roblox account is already linked.");
-}
+    const robloxRecord = {
+      robloxId: String(user.sub),
+      username: user.preferred_username || "Unknown"
+    };
 
-const existingRoblox = await redis.get(`discord:${discordId}`);
-
-if (existingRoblox && existingRoblox !== user.sub) {
-  return res.status(409).send("Your Discord account is already linked to another Roblox account.");
-}
-
-await redis.set(`discord:${discordId}`, user.sub);
-await redis.set(`roblox:${user.sub}`, discordId);
-const dmResponse = await fetch(
-  "https://discord.com/api/v10/users/@me/channels",
-  {
-    method: "POST",
-    headers: {
-      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ recipient_id: discordId })
-  }
-);
-
-if (dmResponse.ok) {
-  const channel = await dmResponse.json();
-
-  await fetch(
-    `https://discord.com/api/v10/channels/${channel.id}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        content: `✅ Your Roblox account **${user.preferred_username || user.sub}** has been successfully linked!`
-      })
-    }
-  );
-}
-    return res.status(200).send(
-      `Verification successful! Roblox account: ${user.preferred_username || user.sub}. You can close this page.`
+    // Save only Roblox account information permanently.
+    await redis.set(
+      `roblox:${user.sub}`,
+      JSON.stringify(robloxRecord)
     );
+
+    // Remove the old permanent Discord mapping, if present.
+    await redis.del(`discord:${discordId}`);
+
+    // Send the user a Discord confirmation DM.
+    try {
+      const dmResponse = await fetch(
+        "https://discord.com/api/v10/users/@me/channels",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ recipient_id: discordId })
+        }
+      );
+
+      if (dmResponse.ok) {
+        const channel = await dmResponse.json();
+
+        await fetch(
+          `https://discord.com/api/v10/channels/${channel.id}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              content: `✅ Your Roblox account **${robloxRecord.username}** has been successfully linked!`
+            })
+          }
+        );
+      }
+    } catch (dmError) {
+      console.error("Discord DM failed:", dmError.message);
+    }
+
+    return res.status(200).send(
+      `Verification successful! Roblox username: ${robloxRecord.username}. You can close this page.`
+    );
+
   } catch (error) {
     console.error("OAuth callback error:", error.message);
     return res.status(500).send("Verification failed. Please try again.");
