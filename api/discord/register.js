@@ -18,15 +18,14 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      "https://discord.com/api/v10/channels/1568473525671432202/messages",
+      "https://discord.com/api/v10/channels/1568473525671432202/messages/1568474267429900490",
       {
-        method: "POST",
+        method: "PATCH",
         headers: {
           Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          content: "**ROBLOX VERIFICATION**\n\nClick the button below to link your Roblox account and unlock the server.",
           components: [
             {
               type: 1,
@@ -47,13 +46,16 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Message creation failed:", data);
-      return res.status(500).json({ error: "Could not create button" });
+      console.error("Message update failed:", data);
+      return res.status(500).json({
+        error: "Could not update message",
+        details: data.message
+      });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Verification button created!"
+      message: "Verification button added!"
     });
 
   } catch (error) {
