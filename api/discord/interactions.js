@@ -1,4 +1,3 @@
-
 import crypto from "crypto";
 import nacl from "tweetnacl";
 import { getRedis } from "../../lib/redis.js";
@@ -46,7 +45,15 @@ export default async function handler(req, res) {
       return res.status(200).json({ type: 1 });
     }
 
-    if (interaction.type !== 2 || interaction.data?.name !== "verify") {
+    const isVerifyCommand =
+      interaction.type === 2 &&
+      interaction.data?.name === "verify";
+
+    const isVerifyButton =
+      interaction.type === 3 &&
+      interaction.data?.custom_id === "verify_roblox";
+
+    if (!isVerifyCommand && !isVerifyButton) {
       return res.status(400).send("Unsupported interaction");
     }
 
@@ -104,9 +111,9 @@ export default async function handler(req, res) {
       type: 4,
       data: {
         content:
-          `**Roblox verification**\n` +
+          "**Roblox verification**\n" +
           `[Click here to verify your Roblox account](${loginUrl})\n\n` +
-          `This link expires in 10 minutes.`,
+          "This link expires in 10 minutes.",
         flags: 64
       }
     });
