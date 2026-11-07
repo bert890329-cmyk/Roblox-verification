@@ -26,7 +26,9 @@ export default async function handler(req, res) {
     }
 
     const age = Math.abs(Date.now() / 1000 - Number(timestamp));
-    if (age > 300) return res.status(401).send("Expired request");
+    if (age > 300) {
+      return res.status(401).send("Expired request");
+    }
 
     const valid = nacl.sign.detached.verify(
       Buffer.concat([Buffer.from(timestamp), rawBody]),
@@ -34,7 +36,9 @@ export default async function handler(req, res) {
       Buffer.from(publicKey, "hex")
     );
 
-    if (!valid) return res.status(401).send("Invalid signature");
+    if (!valid) {
+      return res.status(401).send("Invalid signature");
+    }
 
     const interaction = JSON.parse(rawBody.toString());
 
@@ -47,17 +51,24 @@ export default async function handler(req, res) {
     }
 
     const clientId = process.env.ROBLOX_CLIENT_ID;
+
     if (!clientId) {
       return res.status(500).send("Missing Roblox client ID");
     }
 
-    const discordId = interaction.member?.user?.id || interaction.user?.id;
-    if (!discordId) {
+    const discordUser =
+      interaction.member?.user || interaction.user;
+
+    if (!discordUser?.id) {
       return res.status(400).send("Missing Discord user");
     }
 
+    const discordId = discordUser.id;
+    const discordUsername = discordUser.username || "Unknown";
+
     const state = crypto.randomBytes(32).toString("hex");
     const verifier = crypto.randomBytes(32).toString("base64url");
+
     const challenge = crypto
       .createHash("sha256")
       .update(verifier)
@@ -67,7 +78,11 @@ export default async function handler(req, res) {
 
     await redis.set(
       `oauth:${state}`,
-      JSON.stringify({ verifier, discordId }),
+      JSON.stringify({
+        verifier,
+        discordId,
+        discordUsername
+      }),
       { EX: 600, NX: true }
     );
 
@@ -88,10 +103,14 @@ export default async function handler(req, res) {
     return res.status(200).json({
       type: 4,
       data: {
-        content: `**Roblox verification**\n[Click here to verify your Roblox account](${loginUrl})\n\nThis link expires in 10 minutes.`,
+        content:
+          `**Roblox verification**\n` +
+          `[Click here to verify your Roblox account](${loginUrl})\n\n` +
+          `This link expires in 10 minutes.`,
         flags: 64
       }
     });
+
   } catch (error) {
     console.error("Discord verification error:", error.message);
     return res.status(500).send("Verification could not start");
