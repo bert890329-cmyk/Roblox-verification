@@ -82,10 +82,11 @@ export default async function handler(req, res) {
       return res.status(400).send("Roblox did not return a user ID.");
     }
 
-    const robloxRecord = {
-      robloxId: String(user.sub),
-      username: user.preferred_username || "Unknown"
-    };
+const robloxRecord = {
+  robloxId: String(user.sub),
+  username: user.preferred_username || "Unknown",
+  discordUsername: discordUsername || "Unknown"
+};
 
     // Save only Roblox account information permanently.
     await redis.set(
