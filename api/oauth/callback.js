@@ -77,21 +77,20 @@ export default async function handler(req, res) {
     if (!user.sub) {
       return res.status(400).send("Roblox did not return a user ID.");
     }
+const existingDiscord = await redis.get(`roblox:${user.sub}`);
 
-    const existingDiscord = await redis.get(`roblox:${user.sub}`);
+if (existingDiscord && existingDiscord !== discordId) {
+  return res.status(409).send("This Roblox account is already linked.");
+}
 
-    if (existingDiscord && existingDiscord !== discordId) {
-      return res.status(409).send("This Roblox account is already linked.");
-    }
+const existingRoblox = await redis.get(`discord:${discordId}`);
 
-    const existingRoblox = await redis.get(`discord:${discordId}`);
+if (existingRoblox && existingRoblox !== user.sub) {
+  return res.status(409).send("Your Discord account is already linked to another Roblox account.");
+}
 
-    if (existingRoblox && existingRoblox !== user.sub) {
-      return res.status(409).send("Your Discord account is already linked to another Roblox account.");
-    }
-
-    await redis.set(`discord:${discordId}`, user.sub);
-    await redis.set(`roblox:${user.sub}`, discordId);
+await redis.set(`discord:${discordId}`, user.sub);
+await redis.set(`roblox:${user.sub}`, discordId);
 const dmResponse = await fetch(
   "https://discord.com/api/v10/users/@me/channels",
   {
