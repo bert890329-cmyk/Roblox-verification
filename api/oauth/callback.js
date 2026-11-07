@@ -26,7 +26,11 @@ export default async function handler(req, res) {
       return res.status(400).send("Invalid or expired verification session.");
     }
 
-    const { verifier, discordId } = JSON.parse(sessionData);
+   const {
+  verifier,
+  discordId,
+  discordUsername
+} = JSON.parse(sessionData);
 
     if (!verifier || !discordId) {
       return res.status(400).send("Invalid verification session.");
