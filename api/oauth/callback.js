@@ -96,6 +96,40 @@ const robloxRecord = {
 
     // Remove the old permanent Discord mapping, if present.
     await redis.del(`discord:${discordId}`);
+    const guildId = process.env.DISCORD_GUILD_ID;
+const botToken = process.env.DISCORD_BOT_TOKEN;
+const verifiedRole = process.env.DISCORD_VERIFIED_ROLE_ID;
+const memberRole = process.env.DISCORD_MEMBER_ROLE_ID;
+
+// Give the verified role.
+const addRole = await fetch(
+  `https://discord.com/api/v10/guilds/${guildId}/members/${discordId}/roles/${verifiedRole}`,
+  {
+    method: "PUT",
+    headers: {
+      Authorization: `Bot ${botToken}`
+    }
+  }
+);
+
+if (!addRole.ok) {
+  console.error("Could not assign VIP role:", await addRole.text());
+}
+
+// Remove the unverified Member role.
+const removeRole = await fetch(
+  `https://discord.com/api/v10/guilds/${guildId}/members/${discordId}/roles/${memberRole}`,
+  {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bot ${botToken}`
+    }
+  }
+);
+
+if (!removeRole.ok) {
+  console.error("Could not remove Member role:", await removeRole.text());
+}
 
     // Send the user a Discord confirmation DM.
     try {
