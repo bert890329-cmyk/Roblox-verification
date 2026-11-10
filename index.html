@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roblox Account Linking</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh; margin: 0; padding: 32px 18px;
+      display: grid; place-items: center;
+      background: #111; color: #fff; font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    .box {
+      width: 100%; max-width: 480px; padding: 38px 28px;
+      background: #202020; border-radius: 18px;
+    }
+    h1 { color: #ff5555; margin-top: 0; }
+    p { line-height: 1.55; color: #eee; }
+    .login {
+      display: inline-block; margin: 18px 0 10px; padding: 15px 24px;
+      border-radius: 10px; background: #ff4545; color: #fff;
+      font-weight: bold; text-decoration: none;
+    }
+    .login:hover { background: #e93636; }
+    .links { margin-top: 22px; }
+    .links a { color: #ff8888; margin: 0 10px; }
+    .note { color: #aaa; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="box">
+    <h1>Roblox Account Linking</h1>
+    <p>Connect your Roblox account to access the community's linked-account features.</p>
+    <p>Select the button below to sign in securely through Roblox.</p>
+    <a class="login" href="/api/oauth/start">Connect with Roblox</a>
+    <p class="note">Your Roblox password is entered only on Roblox. This page does not ask for or collect your password.</p>
+    <div class="links">
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms of Service</a>
+    </div>
+  </main>
+</body>
+</html>
